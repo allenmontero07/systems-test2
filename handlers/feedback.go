@@ -1,12 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 
 	"test2-api/helpers"
 	"test2-api/models"
 )
+
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const idKey contextKey = "id"
 
 // FeedbackHandler holds the database connection
 type FeedbackHandler struct {
@@ -59,7 +65,12 @@ func (h *FeedbackHandler) GetAllFeedback(w http.ResponseWriter, r *http.Request)
 
 // GetFeedbackByID handles GET /feedback/{id}
 func (h *FeedbackHandler) GetFeedbackByID(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	// Extract ID from context (set by router)
+	id, ok := r.Context().Value(idKey).(string)
+	if !ok || id == "" {
+		helpers.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing or invalid ID"})
+		return
+	}
 
 	feedback, err := models.GetFeedbackByID(h.DB, id)
 	if err != nil {
@@ -76,7 +87,12 @@ func (h *FeedbackHandler) GetFeedbackByID(w http.ResponseWriter, r *http.Request
 
 // DeleteFeedback handles DELETE /feedback/{id}
 func (h *FeedbackHandler) DeleteFeedback(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	// Extract ID from context (set by router)
+	id, ok := r.Context().Value(idKey).(string)
+	if !ok || id == "" {
+		helpers.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing or invalid ID"})
+		return
+	}
 
 	err := models.DeleteFeedback(h.DB, id)
 	if err != nil {
